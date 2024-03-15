@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Experimento</title>
+		<style>
+canvas { display: block; }
+html { overflow: hidden; background: #000; }
+		</style>
+	</head>
+    <script>console.clear();</script>
+    <script src="https://unpkg.com/three@0.87.1/build/three.js"></script>
+    <script src="https://unpkg.com/three@0.87.1/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.87.1/examples/js/loaders/GLTFLoader.js"></script>
+	<body>
+    <meta http-equiv="Refresh" content="3">
+		<script >
+
+const backgroundColor = 0x000000;
+
+/*////////////////////////////////////////*/
+
+var renderCalls = [];
+function render () {
+  requestAnimationFrame( render );
+  renderCalls.forEach((callback)=>{ callback(); });
+}
+render();
+
+/*////////////////////////////////////////*/
+
+var scene = new THREE.Scene();
+
+var camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 0.1, 800 );
+camera.position.set(20,20,20);
+
+var renderer = new THREE.WebGLRenderer( { antialias: true } );
+renderer.setPixelRatio( window.devicePixelRatio );
+renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.setClearColor( backgroundColor );//0x );
+
+renderer.toneMapping = THREE.LinearToneMapping;
+renderer.toneMappingExposure = Math.pow( 0.94, 5.0 );
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+
+window.addEventListener( 'resize', function () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+}, false );
+
+document.body.appendChild( renderer.domElement);
+
+function renderScene(){ renderer.render( scene, camera ); }
+renderCalls.push(renderScene);
+
+/* ////////////////////////////////////////////////////////////////////////// */
+
+var controls = new THREE.OrbitControls( camera );
+
+controls.rotateSpeed = 0.3;
+controls.zoomSpeed = 20;
+
+controls.minDistance = 3;
+controls.maxDistance = 20;
+
+controls.minPolarAngle = 0; // radians
+controls.maxPolarAngle = Math.PI /2; // radians
+
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+
+renderCalls.push(function(){
+  controls.update()
+});
+
+
+/* ////////////////////////////////////////////////////////////////////////// */
+
+
+var light = new THREE.PointLight( 0xffffcc, 20, 200 );
+light.position.set( 4, 30, -20 );
+scene.add( light );
+
+var light2 = new THREE.AmbientLight( 0x20202A, 20, 100 );
+light2.position.set( 30, -10, 30 );
+scene.add( light2 );
+
+/* ////////////////////////////////////////////////////////////////////////// */
+
+
+
+var loader = new THREE.GLTFLoader();
+loader.crossOrigin = true;
+loader.load( './modelo.gltf', function ( data ) {
+
+  
+    var object = data.scene;
+    object.position.set(0, -15, -0.75);
+
+
+    // TweenMax.from( object.position, 3, {
+    //   y: -8,
+    //   yoyo: true,
+    //   repeat: -1,
+    //   ease: 'Power2.easeInOut'
+    // });
+
+
+    var url = "http://robo.local:10003/wp-json/braco-robo/v1/robo/"
+    fetch( url )
+    .then( res => res.json())
+    .then( out => 
+    {
+        out = JSON.parse( out )
+        // console.log( out );
+        // console.log( out.base);
+        // console.log( object.children[0] );
+        var base = object.children[0].children[4]
+        base.rotation.y = out.base //Math.PI/3
+
+        var braco0 = object.children[0].children[4].children[1]
+        braco0.rotation.x = out.waist * (Math.PI/180)
+
+        var braco1 = object.children[0].children[4].children[1].children[1]
+        var movimento = 0;
+        // if( out.cotovelo >= out.waist ) {
+        //     movimento = (out.waist - out.cotovelo);
+        // } else {
+        //   movimento = out.cotovelo;
+        // }
+
+        if(out.waist > 0 && out.cotovelo != out.waist) {
+          if ((out.waist - out.cotovelo) > 0)
+          movimento = (out.waist - out.cotovelo);
+        }
+
+        movimento = out.cotovelo;
+
+        
+        braco1.rotation.x = ( movimento - 90 ) * (Math.PI/180) * -1
+
+        var braco2 = object.children[0].children[4].children[1].children[1].children[2]
+        braco2.rotation.z = ((out.micro1 - 90) * (Math.PI/180)) * -1
+
+        var braco3 = object.children[0].children[4].children[1].children[1].children[2].children[2]
+
+        movimento = out.pulso
+
+        braco3.rotation.x = ((movimento - 90 ) * (Math.PI/180))
+
+
+        //// -----
+        // var garra = object.children[0].children[4].children[1].children[1].children[2].children[1]
+
+        // console.log( "cotovelo:", garra )
+
+        // movimento = out.garra
+
+        // console.log( "movimento:", movimento )
+
+        // garra.rotation.x = 180 * (Math.PI/180)
+        /// -----
+
+        scene.add(object)
+    })
+    .catch(err => console.log(err));
+});
+  </script>
+	</body>
+</html>
