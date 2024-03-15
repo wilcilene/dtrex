@@ -1,4 +1,4 @@
-# MEU README
+# Instalação DTREX
 
 Pré requisitos:
 - Computador com Arduíno configurado e conectado na porta serial
@@ -39,3 +39,4 @@ zip -r braco-robotico.zip braco-robotico/
 2. Na linha 7 substitua `/dev/ttyUSB0` pela porta serial em qual o Arduíno está conectado
 
 3. Execute o arquivo com o comando `python3 main.py`
+
